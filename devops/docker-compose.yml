@@ -2,23 +2,45 @@ version: '3.8'
 
 services:
   frontend:
-    build: ../frontend
+    build:
+      context: ../frontend
+      dockerfile: Dockerfile
+      target: production
     ports:
       - "80:80"
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
     networks:
       - neoconcept-network
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:80/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 
   backend:
-    build: ../backend
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+      target: production
     environment:
       - NODE_ENV=production
     networks:
       - neoconcept-network
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('net').connect(9595, 'localhost', () => process.exit(0)).on('error', () => process.exit(1))"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 
 networks:
   neoconcept-network:
     driver: bridge
+    driver_opts:
+      com.docker.network.bridge.enable_icc: "true"
+      com.docker.network.bridge.enable_ip_masquerade: "true"

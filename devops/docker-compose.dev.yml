@@ -1,0 +1,42 @@
+version: '3.8'
+
+services:
+  frontend:
+    build:
+      context: ../frontend
+      dockerfile: Dockerfile.dev
+    ports:
+      - "3000:3000"
+    volumes:
+      - ../frontend:/app
+      - /app/node_modules
+      - /app/.next
+    environment:
+      - NODE_ENV=development
+    networks:
+      - neoconcept-network
+    restart: unless-stopped
+    stdin_open: true
+    tty: true
+
+  backend:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile.dev
+    ports:
+      - "9595:9595"
+    volumes:
+      - ../backend:/app
+      - /app/node_modules
+      - /app/dist
+    environment:
+      - NODE_ENV=development
+    networks:
+      - neoconcept-network
+    restart: unless-stopped
+    stdin_open: true
+    tty: true
+
+networks:
+  neoconcept-network:
+    driver: bridge
