@@ -5,16 +5,30 @@ terraform {
       source  = "hashicorp/aws"
       version = "~> 5.0"
     }
+    random = {
+      source  = "hashicorp/random"
+      version = "~> 3.0"
+    }
   }
+  
+  # Use a simple local state for now, but with unique resource names
+  # In production, you'd want S3 backend for state persistence
 }
 
 provider "aws" {
   region = "eu-west-3"
 }
 
+# Random string for unique resource names
+resource "random_string" "suffix" {
+  length  = 8
+  special = false
+  upper   = false
+}
+
 # IAM role for EC2 instance
 resource "aws_iam_role" "ec2_role" {
-  name = "neoconcept-ec2-role"
+  name = "neoconcept-ec2-role-${random_string.suffix.result}"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
@@ -38,13 +52,13 @@ resource "aws_iam_role_policy_attachment" "ssm_policy" {
 
 # Instance profile
 resource "aws_iam_instance_profile" "ec2_profile" {
-  name = "neoconcept-ec2-profile"
+  name = "neoconcept-ec2-profile-${random_string.suffix.result}"
   role = aws_iam_role.ec2_role.name
 }
 
 # Security Group
 resource "aws_security_group" "neoconcept_sg" {
-  name_prefix = "neoconcept-"
+  name        = "neoconcept-sg-${random_string.suffix.result}"
   description = "Security group for NeoConcept application"
 
   # HTTP
@@ -84,7 +98,7 @@ resource "aws_security_group" "neoconcept_sg" {
   }
 
   tags = {
-    Name = "neoconcept-security-group"
+    Name = "neoconcept-security-group-${random_string.suffix.result}"
   }
 }
 
@@ -243,7 +257,7 @@ EOF
   )
 
   tags = {
-    Name = "neoconcept-server"
+    Name = "neoconcept-server-${random_string.suffix.result}"
   }
 }
 
