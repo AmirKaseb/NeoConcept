@@ -5,7 +5,6 @@ services:
     build:
       context: ../frontend
       dockerfile: Dockerfile
-      target: production
     ports:
       - "80:80"
     depends_on:
@@ -25,7 +24,6 @@ services:
     build:
       context: ../backend
       dockerfile: Dockerfile
-      target: production
     environment:
       - NODE_ENV=production
     networks:
