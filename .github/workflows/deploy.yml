@@ -33,6 +33,26 @@ jobs:
         terraform init
         terraform apply -auto-approve
     
+    - name: Wait for Instance to be Ready
+      run: |
+        INSTANCE_ID=$(cd devops && terraform output -raw instance_id)
+        echo "Waiting for instance $INSTANCE_ID to be ready for SSM commands..."
+        
+        # Wait for instance to be in running state and SSM agent to be ready
+        aws ec2 wait instance-running --instance-ids $INSTANCE_ID
+        echo "Instance is running, waiting for SSM agent..."
+        sleep 120
+        
+        # Check if SSM agent is ready
+        for i in {1..10}; do
+          if aws ssm describe-instance-information --filters "Key=InstanceIds,Values=$INSTANCE_ID" --query 'InstanceInformationList[0].PingStatus' --output text | grep -q "Online"; then
+            echo "SSM agent is ready!"
+            break
+          fi
+          echo "SSM agent not ready yet, waiting... ($i/10)"
+          sleep 30
+        done
+
     - name: Restart Application via AWS CLI
       run: |
         INSTANCE_ID=$(cd devops && terraform output -raw instance_id)
