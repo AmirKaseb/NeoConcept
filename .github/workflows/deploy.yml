@@ -1,0 +1,56 @@
+name: 🚀 Deploy NeoConcept
+
+on:
+  push:
+    branches: [ devops ]
+  workflow_dispatch:
+
+env:
+  AWS_REGION: eu-west-3
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Configure AWS
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ env.AWS_REGION }}
+    
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v3
+      with:
+        terraform_version: 1.6.0
+    
+    - name: Terraform Apply
+      working-directory: ./devops
+      run: |
+        terraform init
+        terraform apply -auto-approve
+    
+    - name: Restart Application via AWS CLI
+      run: |
+        INSTANCE_ID=$(cd devops && terraform output -raw instance_id)
+        echo "Restarting application on instance: $INSTANCE_ID"
+        
+        # Send restart command to server
+        aws ssm send-command \
+          --instance-ids $INSTANCE_ID \
+          --document-name "AWS-RunShellScript" \
+          --parameters 'commands=["cd /opt/neoconcept && docker-compose down && docker-compose up --build -d"]' \
+          --comment "Restart NeoConcept Application"
+        
+        # Wait for restart to complete
+        echo "Waiting for application restart..."
+        sleep 60
+    
+    - name: Get IP
+      working-directory: ./devops
+      run: |
+        echo "🎉 Deployment complete!"
+        echo "🌐 Your app: $(terraform output -raw application_url)"
+        echo "📍 IP: $(terraform output -raw instance_public_ip)"

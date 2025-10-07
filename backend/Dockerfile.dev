@@ -1,0 +1,24 @@
+FROM node:20-alpine
+
+WORKDIR /app
+
+# Install dependencies for building native modules
+RUN apk add --no-cache python3 make g++
+
+# Copy package files
+COPY package*.json ./
+COPY prisma ./prisma/
+
+# Install all dependencies
+RUN npm ci --frozen-lockfile
+
+# Generate Prisma client
+RUN npx prisma generate
+
+# Copy source code
+COPY . .
+
+EXPOSE 9595
+
+# Use development command with hot reload
+CMD ["npm", "run", "dev"]

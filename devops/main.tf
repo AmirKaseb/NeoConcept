@@ -12,6 +12,36 @@ provider "aws" {
   region = "eu-west-3"
 }
 
+# IAM role for EC2 instance
+resource "aws_iam_role" "ec2_role" {
+  name = "neoconcept-ec2-role"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = "sts:AssumeRole"
+        Effect = "Allow"
+        Principal = {
+          Service = "ec2.amazonaws.com"
+        }
+      }
+    ]
+  })
+}
+
+# Attach SSM policy to the role
+resource "aws_iam_role_policy_attachment" "ssm_policy" {
+  role       = aws_iam_role.ec2_role.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
+}
+
+# Instance profile
+resource "aws_iam_instance_profile" "ec2_profile" {
+  name = "neoconcept-ec2-profile"
+  role = aws_iam_role.ec2_role.name
+}
+
 # Security Group
 resource "aws_security_group" "neoconcept_sg" {
   name_prefix = "neoconcept-"
@@ -63,6 +93,7 @@ resource "aws_instance" "neoconcept_server" {
   ami                    = data.aws_ami.ubuntu.id
   instance_type          = "t3.micro"
   vpc_security_group_ids = [aws_security_group.neoconcept_sg.id]
+  iam_instance_profile   = aws_iam_instance_profile.ec2_profile.name
 
   user_data = base64encode(<<-EOF
 #!/bin/bash
@@ -79,6 +110,9 @@ sh get-docker.sh
 curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
 chmod +x /usr/local/bin/docker-compose
 
+# Install AWS SSM Agent
+snap install amazon-ssm-agent --classic
+
 # Add ubuntu user to docker group
 usermod -aG docker ubuntu
 
@@ -86,34 +120,62 @@ usermod -aG docker ubuntu
 mkdir -p /opt/neoconcept
 cd /opt/neoconcept
 
-# Create docker-compose.yml
+# Create directories for app code
+mkdir -p frontend backend
+
+# Create optimized docker-compose.yml
 cat > docker-compose.yml << 'COMPOSE_EOF'
 version: '3.8'
 
 services:
   frontend:
-    build: ../frontend
+    build:
+      context: ../frontend
+      dockerfile: Dockerfile
     ports:
       - "80:80"
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
     networks:
       - neoconcept-network
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:80/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 
   backend:
-    build: ../backend
-    # No external port - only accessible via nginx proxy
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
     environment:
       - NODE_ENV=production
     networks:
       - neoconcept-network
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('net').connect(9595, 'localhost', () => process.exit(0)).on('error', () => process.exit(1))"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 
 networks:
   neoconcept-network:
     driver: bridge
+    driver_opts:
+      com.docker.network.bridge.enable_icc: "true"
+      com.docker.network.bridge.enable_ip_masquerade: "true"
 COMPOSE_EOF
+
+# Download application code from GitHub
+echo "Downloading application code..."
+git clone https://github.com/$GITHUB_REPOSITORY.git /tmp/app-source || echo "Failed to clone repo"
+cp -r /tmp/app-source/frontend/* ./frontend/ 2>/dev/null || echo "No frontend code"
+cp -r /tmp/app-source/backend/* ./backend/ 2>/dev/null || echo "No backend code"
 
 # Create startup script
 cat > start.sh << 'START_EOF'
@@ -171,8 +233,12 @@ FAIL2BAN_EOF
 systemctl enable fail2ban
 systemctl start fail2ban
 
+# Simple auto-shutdown after 1 hour
+echo "shutdown -h +60" | at now
+
 echo "NeoConcept application deployed successfully!"
 echo "Access your application at: http://$(curl -s http://169.254.169.254/latest/meta-data/public-ipv4)"
+echo "Server will automatically shut down in 1 hour"
 EOF
   )
 
@@ -198,6 +264,11 @@ data "aws_ami" "ubuntu" {
 }
 
 # Outputs
+output "instance_id" {
+  description = "EC2 instance ID"
+  value       = aws_instance.neoconcept_server.id
+}
+
 output "instance_public_ip" {
   description = "Public IP address of the EC2 instance"
   value       = aws_instance.neoconcept_server.public_ip
