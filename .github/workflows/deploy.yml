@@ -83,6 +83,7 @@ jobs:
         # Deploy via SSH
         echo "Deploying application via SSH..."
         ssh -i /tmp/neoconcept_key -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ubuntu@$INSTANCE_IP "
+          sudo chown -R ubuntu:ubuntu /opt/neoconcept &&
           cd /opt/neoconcept &&
           rm -rf NeoConcept || true &&
           git clone -b devops https://github.com/${{ github.repository }}.git NeoConcept &&
