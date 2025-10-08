@@ -21,6 +21,9 @@ WORKDIR /app
 # Copy built application
 COPY --from=base /app/out /usr/share/nginx/html
 
+# Copy public assets (images, etc.)
+COPY --from=base /app/public /usr/share/nginx/html
+
 # Copy nginx configuration
 COPY nginx/nginx.conf /etc/nginx/nginx.conf
 
