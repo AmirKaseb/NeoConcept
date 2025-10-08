@@ -27,12 +27,25 @@ jobs:
       with:
         terraform_version: 1.6.0
     
+    - name: Create S3 Bucket for State (if needed)
+      run: |
+        # Check if bucket exists, create if not
+        if ! aws s3 ls s3://neoconcept-terraform-state 2>/dev/null; then
+          echo "Creating S3 bucket for Terraform state..."
+          aws s3 mb s3://neoconcept-terraform-state --region eu-west-3
+          aws s3api put-bucket-versioning --bucket neoconcept-terraform-state --versioning-configuration Status=Enabled
+          aws s3api put-bucket-encryption --bucket neoconcept-terraform-state --server-side-encryption-configuration '{
+            "Rules": [{"ApplyServerSideEncryptionByDefault": {"SSEAlgorithm": "AES256"}}]
+          }'
+          echo "✅ S3 bucket created successfully"
+        else
+          echo "✅ S3 bucket already exists"
+        fi
+
     - name: Terraform Apply
       working-directory: ./devops
       run: |
         terraform init
-        # With S3 backend, Terraform will automatically manage state
-        echo "Using S3 backend for persistent state management"
         terraform apply -auto-approve
     
     - name: Deploy Application via SSH

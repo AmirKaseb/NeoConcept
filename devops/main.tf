@@ -7,43 +7,19 @@ terraform {
     }
   }
   
-  backend "s3" {
-    bucket = "neoconcept-terraform-state"
-    key    = "neoconcept/terraform.tfstate"
-    region = "eu-west-3"
-  }
+  # S3 backend will be configured after bucket is created
+  # backend "s3" {
+  #   bucket = "neoconcept-terraform-state"
+  #   key    = "neoconcept/terraform.tfstate"
+  #   region = "eu-west-3"
+  # }
 }
 
 provider "aws" {
   region = "eu-west-3"
 }
 
-# S3 bucket for Terraform state
-resource "aws_s3_bucket" "terraform_state" {
-  bucket = "neoconcept-terraform-state"
-  
-  tags = {
-    Name        = "NeoConcept Terraform State"
-    Environment = "production"
-  }
-}
-
-resource "aws_s3_bucket_versioning" "terraform_state" {
-  bucket = aws_s3_bucket.terraform_state.id
-  versioning_configuration {
-    status = "Enabled"
-  }
-}
-
-resource "aws_s3_bucket_server_side_encryption_configuration" "terraform_state" {
-  bucket = aws_s3_bucket.terraform_state.id
-
-  rule {
-    apply_server_side_encryption_by_default {
-      sse_algorithm = "AES256"
-    }
-  }
-}
+# S3 bucket for Terraform state is created manually in the workflow
 
 # IAM role for EC2 instance
 resource "aws_iam_role" "ec2_role" {
