@@ -47,7 +47,8 @@ jobs:
         sleep 60
         
         # Deploy via SSH using AWS Systems Manager
-        aws ssm send-command \
+        echo "Sending deployment command..."
+        COMMAND_ID=$(aws ssm send-command \
           --instance-ids $INSTANCE_ID \
           --document-name "AWS-RunShellScript" \
           --parameters 'commands=[
@@ -59,10 +60,43 @@ jobs:
             "docker-compose down || true",
             "docker-compose up --build -d"
           ]' \
-          --comment "Deploy NeoConcept Application"
+          --comment "Deploy NeoConcept Application" \
+          --query 'Command.CommandId' --output text)
         
-        echo "Deployment command sent. Application should be starting..."
-        sleep 30
+        echo "Command ID: $COMMAND_ID"
+        echo "Waiting for deployment to complete..."
+        
+        # Wait for command to complete
+        aws ssm wait command-executed \
+          --command-id $COMMAND_ID \
+          --instance-id $INSTANCE_ID
+        
+        # Get command output
+        echo "Getting deployment logs..."
+        aws ssm get-command-invocation \
+          --command-id $COMMAND_ID \
+          --instance-id $INSTANCE_ID \
+          --query 'StandardOutputContent' --output text
+        
+        # Check if command succeeded
+        STATUS=$(aws ssm get-command-invocation \
+          --command-id $COMMAND_ID \
+          --instance-id $INSTANCE_ID \
+          --query 'Status' --output text)
+        
+        echo "Deployment status: $STATUS"
+        
+        if [ "$STATUS" != "Success" ]; then
+          echo "❌ Deployment failed!"
+          echo "Error output:"
+          aws ssm get-command-invocation \
+            --command-id $COMMAND_ID \
+            --instance-id $INSTANCE_ID \
+            --query 'StandardErrorContent' --output text
+          exit 1
+        else
+          echo "✅ Deployment successful!"
+        fi
     
     - name: Get IP
       working-directory: ./devops
