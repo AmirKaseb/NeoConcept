@@ -98,14 +98,6 @@ jobs:
            git clone -b devops https://github.com/${{ github.repository }}.git NeoConcept &&
            cd NeoConcept/devops &&
            docker-compose down || true &&
-           export DATABASE_URL='${{ secrets.DATABASE_URL }}' &&
-           export JWT_SECRET='${{ secrets.JWT_SECRET }}' &&
-           export GMAIL='${{ secrets.GMAIL }}' &&
-           export GMAIL_APP_PASSWORD='${{ secrets.GMAIL_APP_PASSWORD }}' &&
-           export GOOGLE_CLIENT_ID='${{ secrets.GOOGLE_CLIENT_ID }}' &&
-           export GOOGLE_CLIENT_SECRET='${{ secrets.GOOGLE_CLIENT_SECRET }}' &&
-           export GOOGLE_CALLBACK_URL='${{ secrets.GOOGLE_CALLBACK_URL }}' &&
-           export GOOGLE_APPLICATION_CREDENTIALS='${{ secrets.GOOGLE_APPLICATION_CREDENTIALS }}' &&
            docker-compose up --build -d &&
            echo '✅ Deployment completed!'
          "
