@@ -59,7 +59,7 @@ jobs:
           echo "No existing instance found, will create new one"
         fi
         
-        terraform apply -auto-approve
+        terraform apply -auto-approve -var="ssh_public_key=${{ secrets.SSH_PUBLIC_KEY }}"
     
     - name: Deploy Application via SSH
       run: |
@@ -72,12 +72,13 @@ jobs:
         echo "Instance is running, waiting for SSH..."
         sleep 60
         
-        # Install sshpass for password authentication
-        sudo apt-get update && sudo apt-get install -y sshpass
+        # Save SSH private key from GitHub Secrets
+        echo "${{ secrets.SSH_PRIVATE_KEY }}" > /tmp/neoconcept_key
+        chmod 600 /tmp/neoconcept_key
         
-        # Simple deployment via SSH with password
-        echo "Deploying application..."
-        sshpass -p "NeoConcept2024!" ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ubuntu@$INSTANCE_IP "
+        # Deploy via SSH with private key
+        echo "Deploying application via SSH..."
+        ssh -i /tmp/neoconcept_key -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ubuntu@$INSTANCE_IP "
           cd /opt/neoconcept &&
           rm -rf NeoConcept || true &&
           git clone -b devops https://github.com/${{ github.repository }}.git NeoConcept &&

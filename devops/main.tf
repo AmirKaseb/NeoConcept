@@ -15,9 +15,10 @@ terraform {
   # }
 }
 
-# Hardcoded password for ubuntu user
-locals {
-  ubuntu_password = "NeoConcept2024!"
+# SSH key content from GitHub Secrets
+variable "ssh_public_key" {
+  description = "SSH public key for ubuntu user"
+  type        = string
 }
 
 provider "aws" {
@@ -102,10 +103,17 @@ resource "aws_security_group" "neoconcept_sg" {
   }
 }
 
+# Create SSH key pair
+resource "aws_key_pair" "neoconcept_key" {
+  key_name   = "neoconcept-key"
+  public_key = var.ssh_public_key
+}
+
 # EC2 Instance
 resource "aws_instance" "neoconcept_server" {
   ami                    = data.aws_ami.ubuntu.id
   instance_type          = "c7i-flex.large"
+  key_name               = aws_key_pair.neoconcept_key.key_name
   vpc_security_group_ids = [aws_security_group.neoconcept_sg.id]
   iam_instance_profile   = aws_iam_instance_profile.ec2_profile.name
 
@@ -131,16 +139,12 @@ apt-get install -y git
 # Install AWS SSM Agent
 snap install amazon-ssm-agent --classic
 
-# Enable password authentication for ubuntu user
-echo "ubuntu:${local.ubuntu_password}" | chpasswd
-sed -i 's/#PasswordAuthentication yes/PasswordAuthentication yes/' /etc/ssh/sshd_config
-sed -i 's/PasswordAuthentication no/PasswordAuthentication yes/' /etc/ssh/sshd_config
-systemctl restart sshd
+# SSH key is already configured via EC2 key pair
 
 # Create application directory
 mkdir -p /opt/neoconcept
 
-echo "Basic setup complete. Ready for deployment via SSH with password."
+echo "Basic setup complete. Ready for deployment via SSH."
 EOF
   )
 
