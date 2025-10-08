@@ -98,14 +98,14 @@ jobs:
            git clone -b devops https://github.com/${{ github.repository }}.git NeoConcept &&
            cd NeoConcept/devops &&
            docker-compose down || true &&
-           DATABASE_URL='${{ secrets.DATABASE_URL }}' \
-           JWT_SECRET='${{ secrets.JWT_SECRET }}' \
-           GMAIL='${{ secrets.GMAIL }}' \
-           GMAIL_APP_PASSWORD='${{ secrets.GMAIL_APP_PASSWORD }}' \
-           GOOGLE_CLIENT_ID='${{ secrets.GOOGLE_CLIENT_ID }}' \
-           GOOGLE_CLIENT_SECRET='${{ secrets.GOOGLE_CLIENT_SECRET }}' \
-           GOOGLE_CALLBACK_URL='${{ secrets.GOOGLE_CALLBACK_URL }}' \
-           GOOGLE_APPLICATION_CREDENTIALS='${{ secrets.GOOGLE_APPLICATION_CREDENTIALS }}' \
+           echo 'DATABASE_URL=${{ secrets.DATABASE_URL }}' > .env &&
+           echo 'JWT_SECRET=${{ secrets.JWT_SECRET }}' >> .env &&
+           echo 'GMAIL=${{ secrets.GMAIL }}' >> .env &&
+           echo 'GMAIL_APP_PASSWORD=${{ secrets.GMAIL_APP_PASSWORD }}' >> .env &&
+           echo 'GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}' >> .env &&
+           echo 'GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }}' >> .env &&
+           echo 'GOOGLE_CALLBACK_URL=${{ secrets.GOOGLE_CALLBACK_URL }}' >> .env &&
+           echo 'GOOGLE_APPLICATION_CREDENTIALS=${{ secrets.GOOGLE_APPLICATION_CREDENTIALS }}' >> .env &&
            docker-compose up --build -d &&
            echo '✅ Deployment completed!'
          "

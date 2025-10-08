@@ -1,4 +1,4 @@
-version: '3.8'
+# version: '3.8' - removed as it's obsolete
 
 services:
   frontend:
@@ -24,17 +24,10 @@ services:
     build:
       context: ../backend
       dockerfile: Dockerfile
+    env_file:
+      - .env
     environment:
       - NODE_ENV=production
-      - DATABASE_URL=${DATABASE_URL}
-      - JWT_SECRET=${JWT_SECRET}
-      - PORT=9595
-      - GMAIL=${GMAIL}
-      - GMAIL_APP_PASSWORD=${GMAIL_APP_PASSWORD}
-      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
-      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
-      - GOOGLE_CALLBACK_URL=${GOOGLE_CALLBACK_URL}
-      - GOOGLE_APPLICATION_CREDENTIALS=${GOOGLE_APPLICATION_CREDENTIALS}
     networks:
       - neoconcept-network
     restart: unless-stopped
