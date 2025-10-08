@@ -15,6 +15,12 @@ terraform {
   # }
 }
 
+variable "ubuntu_password" {
+  description = "Password for ubuntu user"
+  type        = string
+  sensitive   = true
+}
+
 provider "aws" {
   region = "eu-west-3"
 }
@@ -126,10 +132,16 @@ apt-get install -y git
 # Install AWS SSM Agent
 snap install amazon-ssm-agent --classic
 
+# Enable password authentication for ubuntu user
+echo "ubuntu:${var.ubuntu_password}" | chpasswd
+sed -i 's/#PasswordAuthentication yes/PasswordAuthentication yes/' /etc/ssh/sshd_config
+sed -i 's/PasswordAuthentication no/PasswordAuthentication yes/' /etc/ssh/sshd_config
+systemctl restart sshd
+
 # Create application directory
 mkdir -p /opt/neoconcept
 
-echo "Basic setup complete. Ready for deployment via SSH."
+echo "Basic setup complete. Ready for deployment via SSH with password."
 EOF
   )
 
@@ -177,5 +189,5 @@ output "application_url" {
 
 output "ssh_command" {
   description = "SSH command to connect to the instance"
-  value       = "No SSH key configured - use AWS Systems Manager Session Manager"
+  value       = "ssh ubuntu@$(terraform output -raw instance_public_ip)"
 }
