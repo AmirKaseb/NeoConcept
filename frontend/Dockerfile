@@ -22,7 +22,6 @@ RUN ls -la /app/out/ || echo "out folder not found"
 FROM nginx:alpine AS production
 WORKDIR /app
 
-# Copy built application
 COPY --from=base /app/out /usr/share/nginx/html
 
 # Copy public assets (images) - Next.js static export doesn't copy these automatically

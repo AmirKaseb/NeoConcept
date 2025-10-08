@@ -77,36 +77,15 @@ jobs:
         
         # Deploy via SSM (no SSH keys needed)
         echo "Deploying application via SSM..."
-        aws ssm send-command \
+        COMMAND_ID=$(aws ssm send-command \
           --instance-ids $INSTANCE_ID \
           --document-name "AWS-RunShellScript" \
-          --parameters 'commands=[
-            "sudo chown -R ubuntu:ubuntu /opt/neoconcept",
-            "cd /opt/neoconcept",
-            "rm -rf NeoConcept || true",
-            "git clone -b devops https://github.com/${{ github.repository }}.git NeoConcept",
-            "cd NeoConcept/devops",
-            "docker-compose down || true",
-            "echo \"DATABASE_URL=${{ secrets.DATABASE_URL }}\" > ../backend/.env",
-            "echo \"JWT_SECRET=${{ secrets.JWT_SECRET }}\" >> ../backend/.env",
-            "echo \"PORT=9595\" >> ../backend/.env",
-            "echo \"GMAIL=${{ secrets.GMAIL }}\" >> ../backend/.env",
-            "echo \"GMAIL_APP_PASSWORD=${{ secrets.GMAIL_APP_PASSWORD }}\" >> ../backend/.env",
-            "echo \"GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}\" >> ../backend/.env",
-            "echo \"GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }}\" >> ../backend/.env",
-            "echo \"GOOGLE_CALLBACK_URL=${{ secrets.GOOGLE_CALLBACK_URL }}\" >> ../backend/.env",
-            "echo \"GOOGLE_APPLICATION_CREDENTIALS=${{ secrets.GOOGLE_APPLICATION_CREDENTIALS }}\" >> ../backend/.env",
-            "echo \"✅ .env file created\"",
-            "ls -la ../backend/.env",
-            "echo \"Starting docker compose...\"",
-            "docker-compose up --build -d",
-            "sleep 10",
-            "docker ps",
-            "docker logs devops-backend-1 || echo 'Backend logs not available'",
-            "docker logs devops-frontend-1 || echo 'Frontend logs not available'",
-            "echo \"✅ Deployment completed!\""
-          ]' \
-          --output text --query "Command.CommandId"
+          --parameters 'commands=["sudo chown -R ubuntu:ubuntu /opt/neoconcept && cd /opt/neoconcept && rm -rf NeoConcept || true && git clone -b devops https://github.com/${{ github.repository }}.git NeoConcept && cd NeoConcept/devops && docker-compose down || true && echo \"DATABASE_URL=${{ secrets.DATABASE_URL }}\" > ../backend/.env && echo \"JWT_SECRET=${{ secrets.JWT_SECRET }}\" >> ../backend/.env && echo \"PORT=9595\" >> ../backend/.env && echo \"GMAIL=${{ secrets.GMAIL }}\" >> ../backend/.env && echo \"GMAIL_APP_PASSWORD=${{ secrets.GMAIL_APP_PASSWORD }}\" >> ../backend/.env && echo \"GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}\" >> ../backend/.env && echo \"GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }}\" >> ../backend/.env && echo \"GOOGLE_CALLBACK_URL=${{ secrets.GOOGLE_CALLBACK_URL }}\" >> ../backend/.env && echo \"GOOGLE_APPLICATION_CREDENTIALS=${{ secrets.GOOGLE_APPLICATION_CREDENTIALS }}\" >> ../backend/.env && docker-compose up --build -d && echo \"✅ Deployment completed!\""]' \
+          --output text --query "Command.CommandId")
+        
+        echo "SSM Command ID: $COMMAND_ID"
+        echo "Waiting for command to complete..."
+        sleep 30
         
         echo "🎉 Application deployed successfully!"
     
