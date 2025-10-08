@@ -103,6 +103,11 @@ jobs:
           cd NeoConcept/devops
           docker-compose down || true
           
+          # Debug: Check if public folder exists and has images
+          echo "Checking frontend public folder..."
+          ls -la ../frontend/public/ || echo "Public folder not found"
+          ls -la ../frontend/public/*.png || echo "No PNG files found in public"
+          
           # Create environment file
           echo "DATABASE_URL=${{ secrets.DATABASE_URL }}" > ../backend/.env
           echo "JWT_SECRET=${{ secrets.JWT_SECRET }}" >> ../backend/.env
@@ -116,6 +121,9 @@ jobs:
           
           # Build and start containers with better error handling
           echo "Building and starting containers..."
+          echo "Debug: Checking build context before build..."
+          ls -la ../frontend/
+          ls -la ../frontend/public/
           docker-compose up --build -d
           
           # Wait for containers to start
@@ -125,6 +133,11 @@ jobs:
           # Check container status
           echo "Container status:"
           docker ps -a
+          
+          # Debug: Check what's in the frontend container
+          echo "Debug: Checking frontend container contents..."
+          docker exec \$(docker ps -q --filter "name=frontend") ls -la /usr/share/nginx/html/ || echo "Frontend container not running"
+          docker exec \$(docker ps -q --filter "name=frontend") ls -la /usr/share/nginx/html/*.png || echo "No PNG files in container"
           
           # Check if containers are running
           RUNNING_CONTAINERS=$(docker ps --format "table {{.Names}}" | wc -l)
