@@ -15,10 +15,9 @@ terraform {
   # }
 }
 
-variable "ubuntu_password" {
-  description = "Password for ubuntu user"
-  type        = string
-  sensitive   = true
+# Hardcoded password for ubuntu user
+locals {
+  ubuntu_password = "NeoConcept2024!"
 }
 
 provider "aws" {
@@ -133,7 +132,7 @@ apt-get install -y git
 snap install amazon-ssm-agent --classic
 
 # Enable password authentication for ubuntu user
-echo "ubuntu:${var.ubuntu_password}" | chpasswd
+echo "ubuntu:${local.ubuntu_password}" | chpasswd
 sed -i 's/#PasswordAuthentication yes/PasswordAuthentication yes/' /etc/ssh/sshd_config
 sed -i 's/PasswordAuthentication no/PasswordAuthentication yes/' /etc/ssh/sshd_config
 systemctl restart sshd

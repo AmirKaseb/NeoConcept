@@ -59,7 +59,7 @@ jobs:
           echo "No existing instance found, will create new one"
         fi
         
-        terraform apply -auto-approve -var="ubuntu_password=${{ secrets.UBUNTU_PASSWORD }}"
+        terraform apply -auto-approve
     
     - name: Deploy Application via SSH
       run: |
@@ -77,7 +77,7 @@ jobs:
         
         # Simple deployment via SSH with password
         echo "Deploying application..."
-        sshpass -p "${{ secrets.UBUNTU_PASSWORD }}" ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ubuntu@$INSTANCE_IP "
+        sshpass -p "NeoConcept2024!" ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ubuntu@$INSTANCE_IP "
           cd /opt/neoconcept &&
           rm -rf NeoConcept || true &&
           git clone -b devops https://github.com/${{ github.repository }}.git NeoConcept &&
