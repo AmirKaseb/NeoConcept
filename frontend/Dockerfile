@@ -25,8 +25,7 @@ COPY --from=base /app/out /usr/share/nginx/html
 COPY nginx/nginx.conf /etc/nginx/nginx.conf
 
 # Create non-root user for security
-RUN addgroup -g 1001 -S nginx && \
-    adduser -S nextjs -u 1001 -G nginx
+RUN adduser -S nextjs -u 1001 -G nginx
 
 # Change ownership of nginx directories
 RUN chown -R nextjs:nginx /usr/share/nginx/html && \

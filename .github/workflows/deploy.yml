@@ -31,9 +31,8 @@ jobs:
       working-directory: ./devops
       run: |
         terraform init
-        # Try to import existing resources if they exist
-        terraform import aws_iam_role.ec2_role neoconcept-ec2-role 2>/dev/null || echo "IAM role not found, will create new one"
-        terraform import aws_iam_instance_profile.ec2_profile neoconcept-ec2-profile 2>/dev/null || echo "Instance profile not found, will create new one"
+        # With S3 backend, Terraform will automatically manage state
+        echo "Using S3 backend for persistent state management"
         terraform apply -auto-approve
     
     - name: Deploy Application via SSH
