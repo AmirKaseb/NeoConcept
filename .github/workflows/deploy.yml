@@ -31,43 +31,40 @@ jobs:
       working-directory: ./devops
       run: |
         terraform init
+        # Try to import existing resources if they exist
+        terraform import aws_iam_role.ec2_role neoconcept-ec2-role 2>/dev/null || echo "IAM role not found, will create new one"
+        terraform import aws_iam_instance_profile.ec2_profile neoconcept-ec2-profile 2>/dev/null || echo "Instance profile not found, will create new one"
+        terraform import aws_security_group.neoconcept_sg neoconcept-sg 2>/dev/null || echo "Security group not found, will create new one"
         terraform apply -auto-approve
     
-    - name: Wait for Instance to be Ready
+    - name: Deploy Application via SSH
       run: |
         INSTANCE_ID=$(cd devops && terraform output -raw instance_id)
-        echo "Waiting for instance $INSTANCE_ID to be ready for SSM commands..."
+        INSTANCE_IP=$(cd devops && terraform output -raw instance_public_ip)
+        echo "Deploying to instance: $INSTANCE_ID at IP: $INSTANCE_IP"
         
-        # Wait for instance to be in running state and SSM agent to be ready
+        # Wait for instance to be ready
         aws ec2 wait instance-running --instance-ids $INSTANCE_ID
-        echo "Instance is running, waiting for SSM agent..."
-        sleep 120
+        echo "Instance is running, waiting for SSH..."
+        sleep 60
         
-        # Check if SSM agent is ready
-        for i in {1..10}; do
-          if aws ssm describe-instance-information --filters "Key=InstanceIds,Values=$INSTANCE_ID" --query 'InstanceInformationList[0].PingStatus' --output text | grep -q "Online"; then
-            echo "SSM agent is ready!"
-            break
-          fi
-          echo "SSM agent not ready yet, waiting... ($i/10)"
-          sleep 30
-        done
-
-    - name: Restart Application via AWS CLI
-      run: |
-        INSTANCE_ID=$(cd devops && terraform output -raw instance_id)
-        echo "Restarting application on instance: $INSTANCE_ID"
-        
-        # Send restart command to server
+        # Deploy via SSH using AWS Systems Manager
         aws ssm send-command \
           --instance-ids $INSTANCE_ID \
           --document-name "AWS-RunShellScript" \
-          --parameters 'commands=["cd /opt/neoconcept && docker-compose down && docker-compose up --build -d"]' \
-          --comment "Restart NeoConcept Application"
+          --parameters 'commands=[
+            "cd /opt/neoconcept",
+            "rm -rf NeoConcept || true",
+            "git clone https://github.com/${{ github.repository }}.git NeoConcept",
+            "cd NeoConcept",
+            "cd devops",
+            "docker-compose down || true",
+            "docker-compose up --build -d"
+          ]' \
+          --comment "Deploy NeoConcept Application"
         
-        # Wait for restart to complete
-        echo "Waiting for application restart..."
-        sleep 60
+        echo "Deployment command sent. Application should be starting..."
+        sleep 30
     
     - name: Get IP
       working-directory: ./devops
