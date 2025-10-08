@@ -74,7 +74,7 @@ jobs:
         
         # Simple deployment via SSH
         echo "Deploying application..."
-        ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ubuntu@$INSTANCE_IP << 'EOF'
+        ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ubuntu@$INSTANCE_IP << EOF
           cd /opt/neoconcept
           rm -rf NeoConcept || true
           git clone -b devops https://github.com/${{ github.repository }}.git NeoConcept
