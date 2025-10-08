@@ -54,6 +54,31 @@ resource "aws_iam_role_policy_attachment" "ssm_policy" {
   policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
 }
 
+# Custom policy for EC2 instance to stop itself
+resource "aws_iam_role_policy" "ec2_self_stop_policy" {
+  name = "neoconcept-ec2-self-stop-policy"
+  role = aws_iam_role.ec2_role.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "ec2:StopInstances",
+          "ec2:DescribeInstances"
+        ]
+        Resource = "*"
+        Condition = {
+          StringEquals = {
+            "ec2:ResourceTag/Name" = "neoconcept-server"
+          }
+        }
+      }
+    ]
+  })
+}
+
 # Instance profile
 resource "aws_iam_instance_profile" "ec2_profile" {
   name = "neoconcept-ec2-profile"
@@ -141,7 +166,20 @@ snap install amazon-ssm-agent --classic
 # Create application directory
 mkdir -p /opt/neoconcept
 
-echo "Basic setup complete. Ready for deployment via SSH."
+# Set up auto-shutdown after 1 hour
+echo "Setting up auto-shutdown after 1 hour..."
+cat > /opt/auto-shutdown.sh << 'AUTOSHUTDOWN'
+#!/bin/bash
+# Auto-shutdown script
+sleep 3600  # Wait 1 hour (3600 seconds)
+echo "Auto-shutting down instance after 1 hour..."
+aws ec2 stop-instances --instance-ids $(curl -s http://169.254.169.254/latest/meta-data/instance-id) --region eu-west-3
+AUTOSHUTDOWN
+
+chmod +x /opt/auto-shutdown.sh
+nohup /opt/auto-shutdown.sh > /var/log/auto-shutdown.log 2>&1 &
+
+echo "Basic setup complete. Auto-shutdown scheduled for 1 hour. Ready for deployment via SSH."
 EOF
   )
 

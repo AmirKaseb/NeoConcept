@@ -114,9 +114,17 @@ jobs:
           echo "GOOGLE_CALLBACK_URL=${{ secrets.GOOGLE_CALLBACK_URL }}" >> ../backend/.env
           echo "GOOGLE_APPLICATION_CREDENTIALS=${{ secrets.GOOGLE_APPLICATION_CREDENTIALS }}" >> ../backend/.env
           
+          # Build and start containers with better error handling
+          echo "Building and starting containers..."
           docker-compose up --build -d
-          sleep 5
-          docker ps
+          
+          # Wait for containers to start
+          echo "Waiting for containers to start..."
+          sleep 30
+          
+          # Check container status
+          echo "Container status:"
+          docker ps -a
           
           # Check if containers are running
           RUNNING_CONTAINERS=$(docker ps --format "table {{.Names}}" | wc -l)
@@ -124,9 +132,28 @@ jobs:
             echo "❌ No containers are running! Application deployment failed!"
             echo "Checking container logs..."
             docker-compose logs
+            echo "Checking container health..."
+            docker-compose ps
             exit 1
           else
             echo "✅ $((RUNNING_CONTAINERS-1)) container(s) are running successfully!"
+          fi
+          
+          # Wait for health checks to pass
+          echo "Waiting for health checks to pass..."
+          sleep 60
+          
+          # Final health check
+          echo "Final health check:"
+          docker-compose ps
+          
+          # Check if services are healthy
+          UNHEALTHY_SERVICES=$(docker-compose ps --format "table {{.Name}}\t{{.Status}}" | grep -v "healthy" | wc -l)
+          if [ "$UNHEALTHY_SERVICES" -gt 1 ]; then
+            echo "⚠️  Some services may not be healthy. Checking logs..."
+            docker-compose logs --tail=50
+          else
+            echo "✅ All services appear to be healthy!"
           fi
           
           echo "✅ Deployment completed!"

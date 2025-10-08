@@ -18,19 +18,16 @@ RUN ls -la /app/public/ || echo "public folder not found"
 # Build the application with optimizations
 RUN npm run build
 
-# Debug: Check what's in the out folder
-RUN ls -la /app/out/
+# Debug: Check what's in the build output
+RUN ls -la /app/.next/ || echo ".next folder not found"
 RUN ls -la /app/out/ || echo "out folder not found"
 
 # Production stage with nginx
 FROM nginx:alpine AS production
 WORKDIR /app
 
-# Copy public assets from base stage (if they exist)
-COPY --from=base /app/public /usr/share/nginx/html
-
-# Copy built application from base stage
-COPY --from=base /app/out/* /usr/share/nginx/html/
+# Copy built application from base stage (static export creates out directory)
+COPY --from=base /app/out /usr/share/nginx/html
 
 # Copy nginx configuration
 COPY nginx/nginx.conf /etc/nginx/nginx.conf
