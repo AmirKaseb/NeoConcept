@@ -19,15 +19,9 @@ terraform {
   # }
 }
 
-# Generate SSH key pair
-resource "tls_private_key" "neoconcept_key" {
-  algorithm = "RSA"
-  rsa_bits  = 4096
-}
-
-resource "aws_key_pair" "neoconcept_key" {
-  key_name   = "neoconcept-key"
-  public_key = tls_private_key.neoconcept_key.public_key_openssh
+# Use existing SSH key pair (already created in AWS)
+data "aws_key_pair" "neoconcept_key" {
+  key_name = "neoconcept-key"
 }
 
 provider "aws" {
@@ -116,7 +110,7 @@ resource "aws_security_group" "neoconcept_sg" {
 resource "aws_instance" "neoconcept_server" {
   ami                    = data.aws_ami.ubuntu.id
   instance_type          = "c7i-flex.large"
-  key_name               = aws_key_pair.neoconcept_key.key_name
+  key_name               = data.aws_key_pair.neoconcept_key.key_name
   vpc_security_group_ids = [aws_security_group.neoconcept_sg.id]
   iam_instance_profile   = aws_iam_instance_profile.ec2_profile.name
 
@@ -193,11 +187,7 @@ output "application_url" {
   value       = "http://${aws_instance.neoconcept_server.public_ip}"
 }
 
-output "private_key" {
-  description = "Private key for SSH access"
-  value       = tls_private_key.neoconcept_key.private_key_pem
-  sensitive   = true
-}
+# Private key not available from existing key pair - use GitHub Secrets instead
 
 output "ssh_command" {
   description = "SSH command to connect to the instance"
