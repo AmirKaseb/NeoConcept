@@ -34,7 +34,6 @@ jobs:
         # Try to import existing resources if they exist
         terraform import aws_iam_role.ec2_role neoconcept-ec2-role 2>/dev/null || echo "IAM role not found, will create new one"
         terraform import aws_iam_instance_profile.ec2_profile neoconcept-ec2-profile 2>/dev/null || echo "Instance profile not found, will create new one"
-        terraform import aws_security_group.neoconcept_sg neoconcept-sg 2>/dev/null || echo "Security group not found, will create new one"
         terraform apply -auto-approve
     
     - name: Deploy Application via SSH

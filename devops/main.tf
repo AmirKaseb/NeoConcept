@@ -51,7 +51,7 @@ resource "aws_iam_instance_profile" "ec2_profile" {
 
 # Security Group
 resource "aws_security_group" "neoconcept_sg" {
-  name        = "neoconcept-sg"
+  name_prefix = "neoconcept-sg-"
   description = "Security group for NeoConcept application"
 
   # HTTP
