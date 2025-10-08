@@ -91,16 +91,24 @@ jobs:
         
         # Deploy via SSH
         echo "Deploying application via SSH..."
-        ssh -i /tmp/neoconcept_key -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ubuntu@$INSTANCE_IP "
-          sudo chown -R ubuntu:ubuntu /opt/neoconcept &&
-          cd /opt/neoconcept &&
-          rm -rf NeoConcept || true &&
-          git clone -b devops https://github.com/${{ github.repository }}.git NeoConcept &&
-          cd NeoConcept/devops &&
-          docker-compose down || true &&
-          docker-compose up --build -d &&
-          echo '✅ Deployment completed!'
-        "
+         ssh -i /tmp/neoconcept_key -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ubuntu@$INSTANCE_IP "
+           sudo chown -R ubuntu:ubuntu /opt/neoconcept &&
+           cd /opt/neoconcept &&
+           rm -rf NeoConcept || true &&
+           git clone -b devops https://github.com/${{ github.repository }}.git NeoConcept &&
+           cd NeoConcept/devops &&
+           docker-compose down || true &&
+           DATABASE_URL='${{ secrets.DATABASE_URL }}' \
+           JWT_SECRET='${{ secrets.JWT_SECRET }}' \
+           GMAIL='${{ secrets.GMAIL }}' \
+           GMAIL_APP_PASSWORD='${{ secrets.GMAIL_APP_PASSWORD }}' \
+           GOOGLE_CLIENT_ID='${{ secrets.GOOGLE_CLIENT_ID }}' \
+           GOOGLE_CLIENT_SECRET='${{ secrets.GOOGLE_CLIENT_SECRET }}' \
+           GOOGLE_CALLBACK_URL='${{ secrets.GOOGLE_CALLBACK_URL }}' \
+           GOOGLE_APPLICATION_CREDENTIALS='${{ secrets.GOOGLE_APPLICATION_CREDENTIALS }}' \
+           docker-compose up --build -d &&
+           echo '✅ Deployment completed!'
+         "
         
         echo "🎉 Application deployed successfully!"
     
