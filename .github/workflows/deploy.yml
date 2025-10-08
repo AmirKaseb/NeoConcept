@@ -77,8 +77,17 @@ jobs:
         
         # Save SSH private key from Terraform output
         cd devops
+        echo "Getting private key from Terraform..."
         terraform output -raw private_key > /tmp/neoconcept_key
         chmod 600 /tmp/neoconcept_key
+        
+        # Debug: Check if key file exists and has content
+        if [ -s /tmp/neoconcept_key ]; then
+          echo "✅ Private key file created successfully"
+        else
+          echo "❌ Private key file is empty or missing!"
+          exit 1
+        fi
         
         # Deploy via SSH
         echo "Deploying application via SSH..."
