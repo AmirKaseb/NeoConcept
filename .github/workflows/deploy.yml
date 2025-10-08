@@ -50,6 +50,9 @@ jobs:
         terraform import aws_iam_role.ec2_role neoconcept-ec2-role 2>/dev/null || echo "IAM role not found, will create new one"
         terraform import aws_iam_instance_profile.ec2_profile neoconcept-ec2-profile 2>/dev/null || echo "Instance profile not found, will create new one"
         
+        # Try to import existing SSH key pair from AWS
+        terraform import aws_key_pair.neoconcept_key neoconcept-key 2>/dev/null || echo "SSH key not found, will create new one"
+        
         # Try to import existing EC2 instance
         EXISTING_INSTANCE_ID=$(aws ec2 describe-instances --filters "Name=tag:Name,Values=neoconcept-server" "Name=instance-state-name,Values=running" --query 'Reservations[0].Instances[0].InstanceId' --output text 2>/dev/null || echo "")
         if [ ! -z "$EXISTING_INSTANCE_ID" ] && [ "$EXISTING_INSTANCE_ID" != "None" ]; then
@@ -59,15 +62,7 @@ jobs:
           echo "No existing instance found, will create new one"
         fi
         
-        # Debug: Check if SSH public key secret is available
-        if [ -z "${{ secrets.SSH_PUBLIC_KEY }}" ]; then
-          echo "❌ SSH_PUBLIC_KEY secret is not set!"
-          exit 1
-        else
-          echo "✅ SSH_PUBLIC_KEY secret is available (length: ${#SSH_PUBLIC_KEY})"
-        fi
-        
-        terraform apply -auto-approve -var="ssh_public_key=${{ secrets.SSH_PUBLIC_KEY }}" -input=false
+        terraform apply -auto-approve
     
     - name: Deploy Application via SSH
       run: |
@@ -80,11 +75,12 @@ jobs:
         echo "Instance is running, waiting for SSH..."
         sleep 60
         
-        # Save SSH private key from GitHub Secrets
-        echo "${{ secrets.SSH_PRIVATE_KEY }}" > /tmp/neoconcept_key
+        # Save SSH private key from Terraform output
+        cd devops
+        terraform output -raw private_key > /tmp/neoconcept_key
         chmod 600 /tmp/neoconcept_key
         
-        # Deploy via SSH with private key
+        # Deploy via SSH
         echo "Deploying application via SSH..."
         ssh -i /tmp/neoconcept_key -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ubuntu@$INSTANCE_IP "
           cd /opt/neoconcept &&

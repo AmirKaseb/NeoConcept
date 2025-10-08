@@ -5,6 +5,10 @@ terraform {
       source  = "hashicorp/aws"
       version = "~> 5.0"
     }
+    tls = {
+      source  = "hashicorp/tls"
+      version = "~> 4.0"
+    }
   }
   
   # S3 backend will be configured after bucket is created
@@ -15,10 +19,15 @@ terraform {
   # }
 }
 
-# SSH key content from GitHub Secrets
-variable "ssh_public_key" {
-  description = "SSH public key for ubuntu user"
-  type        = string
+# Generate SSH key pair
+resource "tls_private_key" "neoconcept_key" {
+  algorithm = "RSA"
+  rsa_bits  = 4096
+}
+
+resource "aws_key_pair" "neoconcept_key" {
+  key_name   = "neoconcept-key"
+  public_key = tls_private_key.neoconcept_key.public_key_openssh
 }
 
 provider "aws" {
@@ -103,12 +112,6 @@ resource "aws_security_group" "neoconcept_sg" {
   }
 }
 
-# Create SSH key pair
-resource "aws_key_pair" "neoconcept_key" {
-  key_name   = "neoconcept-key"
-  public_key = var.ssh_public_key
-}
-
 # EC2 Instance
 resource "aws_instance" "neoconcept_server" {
   ami                    = data.aws_ami.ubuntu.id
@@ -190,7 +193,13 @@ output "application_url" {
   value       = "http://${aws_instance.neoconcept_server.public_ip}"
 }
 
+output "private_key" {
+  description = "Private key for SSH access"
+  value       = tls_private_key.neoconcept_key.private_key_pem
+  sensitive   = true
+}
+
 output "ssh_command" {
   description = "SSH command to connect to the instance"
-  value       = "ssh ubuntu@$(terraform output -raw instance_public_ip)"
+  value       = "ssh -i neoconcept_key.pem ubuntu@$(terraform output -raw instance_public_ip)"
 }
