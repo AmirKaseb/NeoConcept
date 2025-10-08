@@ -55,7 +55,7 @@ jobs:
           --parameters 'commands=[
             "cd /opt/neoconcept",
             "rm -rf NeoConcept || true",
-            "git clone https://github.com/${{ github.repository }}.git NeoConcept",
+            "git clone -b devops https://github.com/${{ github.repository }}.git NeoConcept",
             "cd NeoConcept",
             "cd devops",
             "docker-compose down || true",
