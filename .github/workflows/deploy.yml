@@ -69,8 +69,27 @@ jobs:
         
         # Wait for instance to be ready
         aws ec2 wait instance-running --instance-ids $INSTANCE_ID
-        echo "Instance is running, waiting for SSH..."
-        sleep 60
+        echo "Instance is running, waiting for SSM agent to be ready..."
+        
+        # Wait for SSM agent to be ready
+        echo "Checking SSM agent status..."
+        for i in {1..20}; do
+          SSM_STATUS=$(aws ssm describe-instance-information --filters "Key=InstanceIds,Values=$INSTANCE_ID" --query 'InstanceInformationList[0].PingStatus' --output text 2>/dev/null || echo "None")
+          echo "SSM Status attempt $i: $SSM_STATUS"
+          
+          if [ "$SSM_STATUS" = "Online" ]; then
+            echo "✅ SSM agent is ready!"
+            break
+          fi
+          
+          if [ $i -eq 20 ]; then
+            echo "❌ SSM agent not ready after 10 minutes, but continuing..."
+            break
+          fi
+          
+          echo "SSM agent not ready yet, waiting 30 seconds..."
+          sleep 30
+        done
         
         # Deploy via SSH using AWS Systems Manager
         echo "Sending deployment command..."
