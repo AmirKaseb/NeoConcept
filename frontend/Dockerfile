@@ -11,6 +11,10 @@ RUN npm ci --frozen-lockfile
 # Copy source code
 COPY . .
 
+# Debug: Check what was copied
+RUN ls -la /app/
+RUN ls -la /app/public/ || echo "public folder not found"
+
 # Build the application with optimizations
 RUN npm run build
 
@@ -22,10 +26,10 @@ RUN ls -la /app/out/ || echo "out folder not found"
 FROM nginx:alpine AS production
 WORKDIR /app
 
-# Copy public assets (images) first
+# Copy public assets from base stage (if they exist)
 COPY --from=base /app/public /usr/share/nginx/html
 
-# Copy built application (this will merge with public folder)
+# Copy built application from base stage
 COPY --from=base /app/out/* /usr/share/nginx/html/
 
 # Copy nginx configuration

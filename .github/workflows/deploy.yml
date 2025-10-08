@@ -117,6 +117,18 @@ jobs:
           docker-compose up --build -d
           sleep 5
           docker ps
+          
+          # Check if containers are running
+          RUNNING_CONTAINERS=$(docker ps --format "table {{.Names}}" | wc -l)
+          if [ "$RUNNING_CONTAINERS" -le 1 ]; then
+            echo "❌ No containers are running! Application deployment failed!"
+            echo "Checking container logs..."
+            docker-compose logs
+            exit 1
+          else
+            echo "✅ $((RUNNING_CONTAINERS-1)) container(s) are running successfully!"
+          fi
+          
           echo "✅ Deployment completed!"
         EOF
         
