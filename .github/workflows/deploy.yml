@@ -64,7 +64,7 @@ jobs:
         
         terraform apply -auto-approve
     
-    - name: Deploy Application via SSH
+    - name: Deploy Application via a SSH
       run: |
         INSTANCE_ID=$(cd devops && terraform output -raw instance_id)
         INSTANCE_IP=$(cd devops && terraform output -raw instance_public_ip)
