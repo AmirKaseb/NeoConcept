@@ -59,7 +59,15 @@ jobs:
           echo "No existing instance found, will create new one"
         fi
         
-        terraform apply -auto-approve -var="ssh_public_key=${{ secrets.SSH_PUBLIC_KEY }}"
+        # Debug: Check if SSH public key secret is available
+        if [ -z "${{ secrets.SSH_PUBLIC_KEY }}" ]; then
+          echo "❌ SSH_PUBLIC_KEY secret is not set!"
+          exit 1
+        else
+          echo "✅ SSH_PUBLIC_KEY secret is available (length: ${#SSH_PUBLIC_KEY})"
+        fi
+        
+        terraform apply -auto-approve -var="ssh_public_key=${{ secrets.SSH_PUBLIC_KEY }}" -input=false
     
     - name: Deploy Application via SSH
       run: |
