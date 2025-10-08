@@ -75,17 +75,50 @@ jobs:
         echo "Instance is running, waiting for SSH..."
         sleep 60
         
-        # Deploy via SSM (no SSH keys needed)
-        echo "Deploying application via SSM..."
-        COMMAND_ID=$(aws ssm send-command \
-          --instance-ids $INSTANCE_ID \
-          --document-name "AWS-RunShellScript" \
-          --parameters 'commands=["sudo chown -R ubuntu:ubuntu /opt/neoconcept && cd /opt/neoconcept && rm -rf NeoConcept || true && git clone -b devops https://github.com/${{ github.repository }}.git NeoConcept && cd NeoConcept/devops && docker-compose down || true && echo \"DATABASE_URL=${{ secrets.DATABASE_URL }}\" > ../backend/.env && echo \"JWT_SECRET=${{ secrets.JWT_SECRET }}\" >> ../backend/.env && echo \"PORT=9595\" >> ../backend/.env && echo \"GMAIL=${{ secrets.GMAIL }}\" >> ../backend/.env && echo \"GMAIL_APP_PASSWORD=${{ secrets.GMAIL_APP_PASSWORD }}\" >> ../backend/.env && echo \"GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}\" >> ../backend/.env && echo \"GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }}\" >> ../backend/.env && echo \"GOOGLE_CALLBACK_URL=${{ secrets.GOOGLE_CALLBACK_URL }}\" >> ../backend/.env && echo \"GOOGLE_APPLICATION_CREDENTIALS=${{ secrets.GOOGLE_APPLICATION_CREDENTIALS }}\" >> ../backend/.env && docker-compose up --build -d && sleep 5 && docker ps && echo \"✅ Deployment completed!\""]' \
-          --output text --query "Command.CommandId")
+        # Deploy via SSH
+        echo "Deploying application via SSH..."
         
-        echo "SSM Command ID: $COMMAND_ID"
-        echo "Waiting for command to complete..."
-        sleep 30
+        # Setup SSH key from GitHub secret
+        mkdir -p ~/.ssh
+        echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/amir-publickey
+        chmod 600 ~/.ssh/amir-publickey
+        
+        # Wait for SSH to be ready
+        echo "Waiting for SSH to be ready..."
+        for i in {1..30}; do
+          if ssh -i ~/.ssh/amir-publickey -o StrictHostKeyChecking=no -o ConnectTimeout=10 ubuntu@$INSTANCE_IP "echo 'SSH ready'" 2>/dev/null; then
+            echo "✅ SSH is ready!"
+            break
+          fi
+          echo "SSH not ready yet, waiting... (attempt $i/30)"
+          sleep 10
+        done
+        
+        # Deploy application
+        ssh -i ~/.ssh/amir-publickey -o StrictHostKeyChecking=no ubuntu@$INSTANCE_IP << EOF
+          sudo chown -R ubuntu:ubuntu /opt/neoconcept
+          cd /opt/neoconcept
+          rm -rf NeoConcept || true
+          git clone -b devops https://github.com/${{ github.repository }}.git NeoConcept
+          cd NeoConcept/devops
+          docker-compose down || true
+          
+          # Create environment file
+          echo "DATABASE_URL=${{ secrets.DATABASE_URL }}" > ../backend/.env
+          echo "JWT_SECRET=${{ secrets.JWT_SECRET }}" >> ../backend/.env
+          echo "PORT=9595" >> ../backend/.env
+          echo "GMAIL=${{ secrets.GMAIL }}" >> ../backend/.env
+          echo "GMAIL_APP_PASSWORD=${{ secrets.GMAIL_APP_PASSWORD }}" >> ../backend/.env
+          echo "GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}" >> ../backend/.env
+          echo "GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }}" >> ../backend/.env
+          echo "GOOGLE_CALLBACK_URL=${{ secrets.GOOGLE_CALLBACK_URL }}" >> ../backend/.env
+          echo "GOOGLE_APPLICATION_CREDENTIALS=${{ secrets.GOOGLE_APPLICATION_CREDENTIALS }}" >> ../backend/.env
+          
+          docker-compose up --build -d
+          sleep 5
+          docker ps
+          echo "✅ Deployment completed!"
+EOF
         
         echo "🎉 Application deployed successfully!"
     

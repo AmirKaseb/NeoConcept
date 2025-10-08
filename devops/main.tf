@@ -19,9 +19,9 @@ terraform {
   # }
 }
 
-# Use existing SSH key pair (already created in AWS)
+# Use existing SSH key pair
 data "aws_key_pair" "neoconcept_key" {
-  key_name = "neoconcept-key"
+  key_name = "amir-publickey"
 }
 
 provider "aws" {
@@ -187,9 +187,7 @@ output "application_url" {
   value       = "http://${aws_instance.neoconcept_server.public_ip}"
 }
 
-# Private key not available from existing key pair - use GitHub Secrets instead
-
 output "ssh_command" {
   description = "SSH command to connect to the instance"
-  value       = "ssh -i neoconcept_key.pem ubuntu@$(terraform output -raw instance_public_ip)"
+  value       = "ssh -i amir-publickey.pem ubuntu@${aws_instance.neoconcept_server.public_ip}"
 }
