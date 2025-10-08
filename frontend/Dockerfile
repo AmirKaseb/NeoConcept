@@ -14,6 +14,10 @@ COPY . .
 # Build the application with optimizations
 RUN npm run build
 
+# Debug: Check what's in the out folder
+RUN ls -la /app/out/
+RUN ls -la /app/out/ || echo "out folder not found"
+
 # Production stage with nginx
 FROM nginx:alpine AS production
 WORKDIR /app
@@ -21,7 +25,7 @@ WORKDIR /app
 # Copy built application
 COPY --from=base /app/out /usr/share/nginx/html
 
-# Copy public assets (images, etc.)
+# Copy public assets (images) - Next.js static export doesn't copy these automatically
 COPY --from=base /app/public /usr/share/nginx/html
 
 # Copy nginx configuration

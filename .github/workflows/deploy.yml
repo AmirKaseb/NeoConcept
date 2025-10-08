@@ -96,7 +96,14 @@ jobs:
             "echo \"GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }}\" >> ../backend/.env",
             "echo \"GOOGLE_CALLBACK_URL=${{ secrets.GOOGLE_CALLBACK_URL }}\" >> ../backend/.env",
             "echo \"GOOGLE_APPLICATION_CREDENTIALS=${{ secrets.GOOGLE_APPLICATION_CREDENTIALS }}\" >> ../backend/.env",
+            "echo \"✅ .env file created\"",
+            "ls -la ../backend/.env",
+            "echo \"Starting docker compose...\"",
             "docker-compose up --build -d",
+            "sleep 10",
+            "docker ps",
+            "docker logs devops-backend-1 || echo 'Backend logs not available'",
+            "docker logs devops-frontend-1 || echo 'Frontend logs not available'",
             "echo \"✅ Deployment completed!\""
           ]' \
           --output text --query "Command.CommandId"
