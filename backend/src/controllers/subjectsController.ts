@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient, Role } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
@@ -44,7 +44,15 @@ export async function createRoom(req: Request, res: Response) {
     const userRooms = await prisma.subjectRoom.findMany({ where: { createdBy: res.locals.user.id } });
     if (userRooms.some((room) => room.name === name))
       return res.status(400).json({ status: "fail", message: "Duplicate subject room name. Please choose another." });
-    const newRoom = await prisma.subjectRoom.create({ data: { name, description, createdBy: res.locals.user.id } });
+    let newRoom;
+    await prisma.$transaction(async (tx) => {
+      newRoom = await tx.subjectRoom.create({
+        data: { name, description, createdBy: res.locals.user.id },
+      });
+      await tx.memberShip.create({
+        data: { userId: res.locals.user.id, subjectId: newRoom.id, roleInSubject: Role.INSTRUCTOR },
+      });
+    });
     res.status(201).json({ status: "success", data: newRoom });
   } catch (err) {
     console.log((err as Error).message);

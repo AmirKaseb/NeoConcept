@@ -13,6 +13,7 @@ import Image from "next/image";
 import {motion} from "framer-motion";
 import {FaAppStoreIos} from "react-icons/fa";
 import {IoLogoGooglePlaystore} from "react-icons/io5";
+import {FaApple} from "react-icons/fa";
 
 const Accessibility = () => {
     return (
@@ -51,14 +52,14 @@ const Accessibility = () => {
                         <div className={"bg-gradient-to-r from-[#7BAFFE] to-[#B854FA] p-[2px] rounded w-85"}>
                             <Link href={"/"}>
                             <Button className={"w-full bg-[#191F40] rounded py-8 text-2xl"}>
-                                <div className={"w-full flex gap-2 justify-start items-center"}><IoLogoGooglePlaystore className={"text-white w-20 h-20"}/> <span>Download For Android</span></div>
+                                <div className={"w-full flex gap-2 justify-start items-center"}><IoLogoGooglePlaystore className={"text-white size-7.5"}/> <span>Download For Android</span></div>
                             </Button>
                             </Link>
                         </div>
                         <div className={"bg-gradient-to-r from-[#7BAFFE] to-[#B854FA] p-[2px] rounded w-85"}>
                             <Link href={"/"}>
                             <Button className={"w-full bg-[#191F40] rounded py-8 text-2xl"}>
-                                <div className={"w-full flex justify-start gap-2 items-center"}><FaAppStoreIos className={"text-white w-20 h-20"}/> <span>Download For IOS</span></div>
+                                <div className={"w-full flex justify-start gap-2 items-center"}><FaAppStoreIos className={"text-white size-7.5"}/> <span>Download For IOS</span></div>
                             </Button>
                             </Link>
                         </div>

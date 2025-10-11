@@ -8,7 +8,6 @@ export default async function checkSubjectExists(req: Request, res: Response, ne
   try {
     const room = await prisma.subjectRoom.findUnique({ where: { id: parseInt(subjectId) } });
     if (!room) return res.status(404).json({ status: "fail", message: "Room not found" });
-    res.locals.subjectId = subjectId;
     next();
   } catch (err) {
     console.log((err as Error).message);

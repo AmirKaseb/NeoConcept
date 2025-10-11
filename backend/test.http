@@ -101,11 +101,13 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MTAsImlhdCI6M
 ### get-posts
 
 GET http://localhost:9595/api/v1/subjects/1/posts
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MTAsImlhdCI6MTc1OTY4MjczMiwiZXhwIjoxNzYyMjc0NzMyfQ.lVTW42rECQR4Jjg3qflvPiGmtnrGvDyBnkgfrGJxaRU
 
 
 ### get-post
 
 GET http://localhost:9595/api/v1/subjects/1/posts/1
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MTAsImlhdCI6MTc1OTY4MjczMiwiZXhwIjoxNzYyMjc0NzMyfQ.lVTW42rECQR4Jjg3qflvPiGmtnrGvDyBnkgfrGJxaRU
 
 
 ### create-post

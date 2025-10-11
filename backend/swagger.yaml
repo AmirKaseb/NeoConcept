@@ -1,0 +1,439 @@
+openapi: 3.0.0
+info:
+  title: NeoConcept API
+servers:
+  - url: /api/v1
+    description: Development server
+
+tags:
+  - name: Auth
+  - name: Subjects
+  - name: Posts
+
+paths:
+  /auth/signup:
+    post:
+      tags:
+        - Auth
+      summary: create a new user
+      requestBody:
+        required: true
+        content: 
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                  example: test
+                email:
+                  type: string
+                  format: email
+                  example: test@test.com
+                password:
+                  type: string
+                  example: test
+                role:
+                  type: string
+                  enum: [STUDENT, INSTRUCTOR, ADMIN]
+      responses:
+        '201':
+          description: Please confirm your email
+        '500':
+          description: Something went wrong
+  /auth/login:
+    post:
+      tags:
+        - Auth
+      summary: login a user
+      requestBody:
+        required: true
+        content: 
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: test@test.com
+                password:
+                  type: string
+                  example: test
+      responses:
+        '200':
+          description: success
+        '400':
+          description: Please provide email and password || Invalid credentials
+        '403':
+          description: Please confirm your email first
+        '500':
+          description: Something went wrong
+  /auth/resend-confirmation-email:
+    post:
+      tags:
+        - Auth
+      summary: resend a confirmation email
+      requestBody:
+        required: true
+        content: 
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: test@test.com
+      responses:
+        '201':
+          description: success
+        '400':
+          description: Email is required || Email already confirmed
+        '404':
+          description: User not found
+        '500':
+          description: Something went wrong
+  /auth/google:
+    get:
+      tags:
+        - Auth
+      summary: redirect to Google for authentication
+      description: >
+        Redirects the user to Google's OAuth2 consent screen.
+        This endpoint cannot be executed directly in Swagger UI
+        because it performs an external redirect.
+      parameters:
+        - name: instructor
+          in: query
+          schema:
+            type: boolean
+            example: false
+      responses:
+        '302':
+          description: Redirect to Google's consent screen
+  /auth/forgot-password:
+    post:
+      tags:
+        - Auth
+      summary: send a reset password email in case you forgot the password
+      requestBody:
+        required: true
+        content: 
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: test@test.com
+      responses:
+        '201':
+          description: Password reset email was sent successfully
+        '404':
+          description: User not found
+        '500':
+          description: Something went wrong
+  /auth/reset-password:
+    patch:
+      tags:
+        - Auth
+      summary: create a new password
+      requestBody:
+        required: true
+        content: 
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: test@test.com
+                newPassword:
+                  type: string
+                  example: newPassword
+      responses:
+        '200':
+          description: Password was reset successfully
+        '400':
+          description: Invalid or expired token || Provide a new password
+        '500':
+          description: Something went wrong
+
+  /subjects:
+    get:
+      tags:
+        - Subjects
+      summary: retrieve all subject rooms
+      parameters:
+        - name: search
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: success
+        '500':
+          description: Something went wrong
+  /subjects/{id}:
+    get:
+      tags:
+        - Subjects
+      summary: retrieve a subject room by id
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            example: 1
+      responses:
+        '200':
+          description: success
+        '404':
+          description: Room not found
+        '500':
+          description: Something went wrong
+  /subjects/create:
+    post:
+      tags:
+        - Subjects
+      summary: create a new subject room
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content: 
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  example: test subject
+                descrition:
+                  type: string
+                  example: test description
+              required:
+                - name
+      responses:
+        '201':
+          description: success
+        '400':
+          description: Subject room name is required || Duplicate subject room name. Please choose another.
+        '500':
+          description: Something went wrong
+  /subjects/{id}/update:
+    patch:
+      tags:
+        - Subjects
+      summary: update the info of a subject room
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            example: 1
+      requestBody:
+        content: 
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  example: new test subject
+                descrition:
+                  type: string
+                  example: new test description
+      responses:
+        '200':
+          description: success
+        '400':
+          description: Duplicate subject room name. Please choose another.
+        '404':
+          description: Room not found
+        '500':
+          description: Something went wrong
+  /subjects/{id}/delete:
+    delete:
+      tags:
+        - Subjects
+      summary: delete a subject room
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            example: 1
+      responses:
+        '200':
+          description: Room deleted successfully
+        '404':
+          description: Room not found
+        '500':
+          description: Something went wrong
+
+  /subjects/{subjectId}/posts:
+    get:
+      tags:
+        - Posts
+      summary: retrieve all the posts in a subject room
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: search
+          in: query
+          schema:
+            type: string
+        - name: subjectId
+          in: path
+          required: true
+          schema:
+            type: integer
+            example: 1
+      responses:
+        '200':
+          description: success
+        '500':
+          description: Something went wrong
+  /subjects/{subjectId}/posts/{id}:
+    get:
+      tags:
+        - Posts
+      summary: retrieve a post by id in a subject room
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: subjectId
+          in: path
+          required: true
+          schema:
+            type: integer
+            example: 1
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            example: 1
+      responses:
+        '200':
+          description: success
+        '404':
+          description: Post not found
+        '500':
+          description: Something went wrong
+  /subjects/{subjectId}/posts/create:
+    post:
+      tags:
+        - Posts
+      summary: create a new post in a subject room
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: subjectId
+          in: path
+          required: true
+          schema:
+            type: integer
+            example: 1
+      requestBody:
+        required: true
+        content: 
+          application/json:
+            schema:
+              type: object
+              properties:
+                title:
+                  type: string
+                  example: test post
+                content:
+                  type: string
+                  example: test content
+      responses:
+        '201':
+          description: success
+        '500':
+          description: Something went wrong
+  /subjects/{subjectId}/posts/{id}/update:
+    patch:
+      tags:
+        - Posts
+      summary: update the info of a post in a subject room
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: subjectId
+          in: path
+          required: true
+          schema:
+            type: integer
+            example: 1
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            example: 1
+      requestBody:
+        content: 
+          application/json:
+            schema:
+              type: object
+              properties:
+                title:
+                  type: string
+                  example: new test post
+                content:
+                  type: string
+                  example: new test description
+      responses:
+        '200':
+          description: success
+        '404':
+          description: Post not found
+        '500':
+          description: Something went wrong
+  /subjects/{subjectId}/posts/{id}/delete:
+    delete:
+      tags:
+        - Posts
+      summary: delete a post in a subject room
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: subjectId
+          in: path
+          required: true
+          schema:
+            type: integer
+            example: 1
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            example: 1
+      responses:
+        '200':
+          description: Post deleted successfully
+        '404':
+          description: Post not found
+        '500':
+          description: Something went wrong
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT

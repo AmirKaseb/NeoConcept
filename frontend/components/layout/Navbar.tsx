@@ -28,7 +28,7 @@ const Navbar = ({}: IProps) => {
 
     ];
     return (
-        <nav className="bg-gradient-to-r from-[#55ADFF] to-[#666666]  text-white pb-[1px] md:mb-24 mb-12">
+        <nav className="bg-gradient-to-r from-[#55ADFF] to-[#666666]  text-white pb-[1px] md:mb-20 mb-10">
             <div className="bg-main">
                 <div className="container mx-auto flex justify-between gap-4 items-center pt-5 md:pt-10 pb-2 md:pb-8 px-8 md:px-16">
                     <div className="flex items-center">
